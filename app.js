@@ -1,5 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const routesFeed = require('./routes/feed');
 
@@ -20,4 +22,11 @@ app.use((req, res, next) => {
 
 app.use('/feed', routesFeed);
 
-app.listen(8080);
+mongoose
+  .connect(process.env.MONGODB_URI, { useNewUrlParser: true })
+  .then(() => {
+    app.listen(8080);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
