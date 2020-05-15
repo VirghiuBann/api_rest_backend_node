@@ -6,6 +6,7 @@ require('dotenv').config();
 const multer = require('multer');
 
 const routesFeed = require('./routes/feed');
+const routesAuth = require('./routes/auth');
 
 const app = express();
 
@@ -49,12 +50,14 @@ app.use((req, res, next) => {
 });
 
 app.use('/feed', routesFeed);
+app.use('/auth', routesAuth);
 
 app.use((error, req, res, next) => {
   console.log(error);
   const status = error.statusCode || 500;
   const message = error.message;
-  res.status(status).json({ message: message });
+  const data = error.data;
+  res.status(status).json({ message: message, data: data });
 });
 
 mongoose
