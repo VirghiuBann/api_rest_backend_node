@@ -43,7 +43,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Methods',
-    'OPTION, GET, POST, PUT, PATH, DELETE'
+    'OPTION, GET, POST, PUT, PATCH, DELETE'
   );
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
@@ -64,7 +64,7 @@ mongoose
   .connect(process.env.MONGODB_URI, { useNewUrlParser: true })
   .then(() => {
     const server = app.listen(8080);
-    const io = require('socket.io')(server);
+    const io = require('./socket').init(server);
     io.on('connection', (socket) => {
       console.log('Client connection');
     });
