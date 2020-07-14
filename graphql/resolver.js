@@ -1,5 +1,7 @@
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
 const User = require('../models/user');
 const Post = require('../models/post');
 
@@ -36,6 +38,11 @@ module.exports = {
     return { ...createdUser._doc, _id: createdUser._id.toString() };
   },
 
+  /**
+   * Login
+   * @var inputData email String, password String
+   * @return token, userId
+   */
   login: async ({ email, password }) => {
     const user = await User.findOne({ email: email });
     if (!user) {
@@ -57,10 +64,15 @@ module.exports = {
       'somesupersecret',
       { expiresIn: '1h' }
     );
-    return { token: token, userID: user._id.toString() };
+    return { token: token, userId: user._id.toString() };
   },
 
-  createPost: async function ({ postInput }) {
+  createPost: async function ({ postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error('Not authenticated');
+      error.code = 401;
+      throw error;
+    }
     const errors = [];
     if (
       validator.isEmpty(postInput.title) ||
@@ -82,14 +94,23 @@ module.exports = {
       throw error;
     }
 
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error('Invalid User');
+      error.code = 401;
+      throw error;
+    }
+
     const post = new Post({
       title: postInput.title,
       content: postInput.content,
       imageUrl: postInput.imageUrl,
+      creator: user,
     });
 
     const createPost = await post.save();
-
+    user.post.push(createPost);
+    await user.save();
     return {
       ...createPost._doc,
       _id: createPost._id.toString(),
