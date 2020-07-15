@@ -10,6 +10,7 @@ const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolver');
 const auth = require('./middleware/auth');
+const { deleteImage } = require('./util/file');
 
 const app = express();
 
@@ -109,10 +110,3 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
-
-const deleteImage = (filePath) => {
-  filePath = path.join(__dirname, '..', 'images');
-  fs.unlink(filePath, (err) => {
-    console.log(err);
-  });
-};

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 const Post = require('../models/post');
+const { deleteImage } = require('../util/file');
 
 module.exports = {
   createUser: async function ({ userInput }, req) {
@@ -50,7 +51,9 @@ module.exports = {
       error.code = 401;
       throw error;
     }
+    console.log(user);
     const isEqual = await bcrypt.compare(password, user.password);
+    console.log(isEqual);
     if (!isEqual) {
       const error = new Error('Credential is incorrect.');
       error.code = 401;
@@ -209,5 +212,68 @@ module.exports = {
     }
     const updatedPost = await post.save();
     return updatedPost;
+  },
+
+  deletePost: async ({ id }, req) => {
+    if (!req.isAuth) {
+      const error = new Error('Not authenticated');
+      error.code = 401;
+      throw error;
+    }
+    const post = await Post.findById(id);
+    if (!post) {
+      const error = new Error('Not found post!');
+      error.code = 404;
+      throw error;
+    }
+    if (post.creator.toString() !== req.userId.toString()) {
+      const error = new Error('Not authorized');
+      error.code = 403;
+      throw error;
+    }
+    deleteImage(post.imageUrl);
+    await Post.findByIdAndRemove(id);
+    const user = await User.findById(req.userId);
+    user.post.pull(id);
+    await user.save();
+    return true;
+  },
+
+  user: async ({ status }, req) => {
+    if (!req.isAuth) {
+      const error = new Error('Not authenticated');
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error('Not found user!');
+      error.code = 404;
+      throw error;
+    }
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+    };
+  },
+
+  updateStatus: async ({ status }, req) => {
+    if (!req.isAuth) {
+      const error = new Error('Not authenticated');
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error('Not found user!');
+      error.code = 404;
+      throw error;
+    }
+    user.status = status;
+    await user.save();
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+    };
   },
 };
